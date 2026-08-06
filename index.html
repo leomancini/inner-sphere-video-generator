@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1728, initial-scale=1" />
+    <title>1728×1080 Page</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #ccc;
+      }
+
+      #stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1728px;
+        height: 1080px;
+        background: #000;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .area {
+        position: absolute;
+        background: #2c4a8c;
+        overflow: hidden;
+      }
+
+      #rect-top {
+        left: 1238px;
+        top: 128px;
+        width: 435px;
+        height: 285px;
+        border-radius: 22px;
+      }
+
+      #rect-bottom {
+        left: 1238px;
+        top: 665px;
+        width: 435px;
+        height: 285px;
+        border-radius: 22px;
+      }
+
+      #circle {
+        left: 96px;
+        top: 100px;
+        width: 875px;
+        height: 875px;
+        border-radius: 50%;
+      }
+
+      #tunnel {
+        display: block;
+        width: 875px;
+        height: 875px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <div class="area" id="rect-top"></div>
+      <div class="area" id="rect-bottom"></div>
+      <div class="area" id="circle">
+        <canvas id="tunnel" width="875" height="875"></canvas>
+      </div>
+    </div>
+    <script>
+      // Center the stage at whole-pixel offsets only — no fractional
+      // positions, no scaling, so the 1728x1080 grid never slips.
+      const stage = document.getElementById("stage");
+      function position() {
+        const x = Math.max(0, Math.floor((window.innerWidth - 1728) / 2));
+        const y = Math.max(0, Math.floor((window.innerHeight - 1080) / 2));
+        stage.style.left = x + "px";
+        stage.style.top = y + "px";
+      }
+      window.addEventListener("resize", position);
+      position();
+
+      // Rainbow tunnel: concentric rings on a geometric radius progression
+      // (log-spaced, so motion reads as flying forward), hue cycling along
+      // the depth axis, with a slow global pulse in scale and brightness.
+      const canvas = document.getElementById("tunnel");
+      const ctx = canvas.getContext("2d");
+      const SIZE = 875;
+      const CENTER = SIZE / 2;
+      const RING_RATIO = 0.9; // radius shrink per ring
+      const RING_COUNT = 70;
+      const ZOOM_SPEED = 1.4; // rings per second toward viewer
+      const HUE_STEP = 22; // degrees of hue per ring
+      const PULSE_PERIOD = 2.4; // seconds
+
+      function draw(now) {
+        const t = now / 1000;
+        const phase = (t * ZOOM_SPEED) % 1;
+        const pulse = Math.sin((t / PULSE_PERIOD) * Math.PI * 2);
+        const maxR = CENTER * (1.12 + 0.08 * pulse);
+        const light = 52 + 8 * pulse;
+
+        for (let i = 0; i < RING_COUNT; i++) {
+          const r = maxR * Math.pow(RING_RATIO, i - phase);
+          if (r < 0.5) break;
+          const hue = ((i - phase) * HUE_STEP - t * 60) % 360;
+          ctx.fillStyle = `hsl(${hue} 100% ${light}%)`;
+          ctx.beginPath();
+          ctx.arc(CENTER, CENTER, Math.min(r, CENTER * 1.5), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        requestAnimationFrame(draw);
+      }
+      requestAnimationFrame(draw);
+
+    </script>
+  </body>
+</html>
