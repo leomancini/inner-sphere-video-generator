@@ -54,12 +54,16 @@
         border: 2px solid #6b6b6b;
       }
 
+      /* clip-path, not just border-radius + overflow: hidden — the video is a
+         composited layer (it carries a transform), and Chrome lets such a
+         child escape a rounded overflow clip. clip-path holds it. */
       #circle {
         left: 96px;
         top: 100px;
         width: 875px;
         height: 875px;
         border-radius: 50%;
+        clip-path: circle(50%);
         background: #000;
       }
 
@@ -72,18 +76,27 @@
         transform: rotate(270deg);
       }
 
-      /* Source is 854x480; `cover` into an 875 square already fills the height
-         exactly and crops the sides, so a vertical object-position would do
-         nothing. Scaling from the top edge is what actually pushes in on the
-         top of the frame. --zoom 1 shows the full height, 2 shows the top half. */
+      /* Source is 854x480. `contain` in an 875 square fits the limiting axis —
+         for a 16:9 frame that is the width — so at --zoom 1 the whole 854px
+         width lands across the circle's diameter as an 875x492 band. --zoom
+         scales up from there, cropping the sides:
+           1     full frame width, letterboxed inside the circle
+           1.78  fills the circle edge to edge, no letterbox
+           2.1   fills it and crops past the burnt-in timecode at frame right
+         Origin stays centred so the crop takes evenly from both sides. */
       #video {
         display: block;
         width: 875px;
         height: 875px;
-        object-fit: cover;
-        --zoom: 1.6;
-        transform: scale(var(--zoom));
-        transform-origin: top center;
+        object-fit: contain;
+        /* --zoom scales the 875x492 band up from the centre; it must stay at
+           or above 1.78 or the band stops covering the circle and black edges
+           appear. --shift then slides the enlarged band toward the top of the
+           picture. Its usable range is +/-(492*zoom - 875)/2 -- 178px at zoom
+           2.5 -- past which the band pulls off the circle and lets black in. */
+        --zoom: 2.5;
+        --shift: 120px;
+        transform: translateY(var(--shift)) scale(var(--zoom));
       }
 
       /* Turned with the footage. A quarter-turn swaps the axes, so the content
