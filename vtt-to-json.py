@@ -6,7 +6,7 @@ insert 10ms filler cues between them. We keep only the newly-spoken line from
 each real cue, strip the inline <00:00:00.000><c> word timings, and close each
 cue at the start of the next one.
 
-  ./vtt-to-json.py videos/source/orient.en.vtt captions.json
+  ./vtt-to-json.py videos/source/asia60s.en.vtt captions.json
 """
 import json
 import re
@@ -56,7 +56,7 @@ def parse(path):
     return out
 
 
-src = sys.argv[1] if len(sys.argv) > 1 else "videos/source/orient.en.vtt"
+src = sys.argv[1] if len(sys.argv) > 1 else "videos/source/asia60s.en.vtt"
 dst = sys.argv[2] if len(sys.argv) > 2 else "captions.json"
 cues = parse(src)
 json.dump(cues, open(dst, "w", encoding="utf-8"), ensure_ascii=False)

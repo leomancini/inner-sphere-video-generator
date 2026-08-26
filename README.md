@@ -18,23 +18,26 @@ headers, so a long video plays from the start but can never seek.
 
 ## Source footage
 
-The footage and captions are from **"Northwest Orient Airlines 1950s Asia
-Travelogue: High Road to the Orient"**, posted by **PeriscopeFilm**:
+The footage and captions are from **"Manila, Shanghai, Tokyo and Hong Kong in
+the 60s"**, posted by **TRNGL**:
 
-<https://www.youtube.com/watch?v=XJdnAymPRzI>
+<https://www.youtube.com/watch?v=1smEmvVxSR0>
 
-PeriscopeFilm is an archival film channel; this is a 1950s airline promotional
-travelogue. The video itself is not in this repo — `videos/` is gitignored.
-`captions.json` is generated from the video's YouTube auto-captions by
-`vtt-to-json.py`, so the transcript is machine-made and has the transcription
-errors you would expect of it.
+The video itself is not in this repo — `videos/` is gitignored. `captions.json`
+is generated from the video's YouTube captions by `vtt-to-json.py`; this
+upload's captions already carry punctuation and sentence case, so they need no
+cleanup pass.
 
 To fetch the source again:
 
-    yt-dlp -f "bv*[height<=1080]+ba/b" --merge-output-format mp4 \
+    yt-dlp -f "137+ba/bv*[height<=1080][vcodec^=avc1]+ba/b[height<=1080]" \
+      --merge-output-format mp4 \
       --write-auto-subs --sub-langs "en.*" --sub-format vtt \
-      -o "videos/source/orient.%(ext)s" \
-      "https://www.youtube.com/watch?v=XJdnAymPRzI"
-    ./vtt-to-json.py videos/source/orient.en.vtt captions.json
+      -o "videos/source/asia60s.%(ext)s" \
+      "https://www.youtube.com/watch?v=1smEmvVxSR0"
+    ./vtt-to-json.py videos/source/asia60s.en.vtt captions.json
 
-480p is the highest resolution YouTube holds for this upload.
+The upload goes to 4K, but 1080p is fetched deliberately: the circle is 875px
+and the footage is scaled ~1.14x at the default zoom, so more resolution would
+not show. The picture inside that 1920x1080 frame is 4:3 — 1440x1080
+pillarboxed at x=240 — which sets the zoom floor documented in `index.html`.

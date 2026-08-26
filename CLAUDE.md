@@ -36,7 +36,7 @@ at the top of every cue and inserts 10ms filler cues between them; the script
 keeps only the newly-spoken line, strips the inline word-timing tags, and
 closes each cue at the next one's start.
 
-    ./vtt-to-json.py videos/source/orient.en.vtt captions.json
+    ./vtt-to-json.py videos/source/asia60s.en.vtt captions.json
 
 Fetch the source with yt-dlp (`--write-auto-subs --sub-langs "en.*"
 --sub-format vtt`). Keep yt-dlp current — a stale build fails extraction

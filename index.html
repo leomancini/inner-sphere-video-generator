@@ -89,11 +89,15 @@
         width: 875px;
         height: 875px;
         object-fit: contain;
-        /* --zoom scales the 875x492 band up from the centre; it must stay at
-           or above 1.78 or the band stops covering the circle and black edges
-           appear. --shift then slides the enlarged band toward the top of the
-           picture. Its usable range is +/-(492*zoom - 875)/2 -- 178px at zoom
-           2.5 -- past which the band pulls off the circle and lets black in. */
+        /* Source is 1920x1080, but the picture inside it is 4:3 — 1440x1080
+           pillarboxed at x=240 (constant for the whole film, per cropdetect).
+           `contain` fits the width, giving an 875x492 band of which the
+           picture is the middle 656px and the bars the outer 109px a side.
+           --zoom scales that band about its centre. The floor is 1.78, set by
+           the band covering the circle's height; clearing the pillarbox needs
+           only 1.33, so anything that covers the circle already hides the
+           bars. --shift then slides the band toward the top of the picture,
+           range +/-(492*zoom - 875)/2 — 178px at zoom 2.5. */
         --zoom: 2.5;
         --shift: 120px;
         transform: translateY(var(--shift)) scale(var(--zoom));
@@ -148,7 +152,7 @@
         <div id="rotor">
           <video
             id="video"
-            src="videos/source/orient.mp4"
+            src="videos/source/asia60s.mp4"
             muted
             playsinline
             autoplay
@@ -223,11 +227,10 @@
         requestAnimationFrame(tick);
       }
 
-      // The print opens on black leader, so playback starts past it and the
-      // loop returns there rather than to 0. Caption times are absolute video
-      // times and need no offset; START lands just as the first cue (19.76s)
-      // comes up, so the narration begins with the picture.
-      const START = 20;
+      // Skip the 0.44s of black at the head of the print; the loop returns
+      // here rather than to 0. Caption times are absolute video times and
+      // need no offset.
+      const START = 1;
 
       function toStart() {
         try {
