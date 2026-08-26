@@ -84,23 +84,19 @@
            1.78  fills the circle edge to edge, no letterbox
            2.1   fills it and crops past the burnt-in timecode at frame right
          Origin stays centred so the crop takes evenly from both sides. */
+      /* Source is 1920x1080, but the picture inside it is 4:3 — 1440x1080
+         pillarboxed at x=240 (constant for the whole film, per cropdetect).
+         `contain` fits the width, giving an 875x492 band. --zoom scales that
+         band about its centre; the floor is 1.78, below which the band stops
+         covering the circle and black edges appear. Clearing the pillarbox
+         needs only 1.33, so any value that covers the circle hides the bars. */
       #video {
         display: block;
         width: 875px;
         height: 875px;
         object-fit: contain;
-        /* Source is 1920x1080, but the picture inside it is 4:3 — 1440x1080
-           pillarboxed at x=240 (constant for the whole film, per cropdetect).
-           `contain` fits the width, giving an 875x492 band of which the
-           picture is the middle 656px and the bars the outer 109px a side.
-           --zoom scales that band about its centre. The floor is 1.78, set by
-           the band covering the circle's height; clearing the pillarbox needs
-           only 1.33, so anything that covers the circle already hides the
-           bars. --shift then slides the band toward the top of the picture,
-           range +/-(492*zoom - 875)/2 — 178px at zoom 2.5. */
-        --zoom: 2.5;
-        --shift: 120px;
-        transform: translateY(var(--shift)) scale(var(--zoom));
+        --zoom: 2;
+        transform: scale(var(--zoom));
       }
 
       /* Turned with the footage. A quarter-turn swaps the axes, so the content
