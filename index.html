@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=1728, initial-scale=1" />
     <title>1728×1080 Page</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=block"
+      rel="stylesheet"
+    />
     <style>
       * {
         margin: 0;
@@ -31,24 +37,21 @@
 
       .area {
         position: absolute;
-        background: #2c4a8c;
         overflow: hidden;
       }
 
-      #rect-top {
+      /* Was #rect-top (y128, h285) + #rect-bottom (y665, h285). Merged into
+         one panel spanning both plus the 252px gap: y128 -> y950. The border
+         is inside the box (box-sizing: border-box), so the panel's outer
+         footprint stays exactly 435x822. */
+      #captions {
         left: 1238px;
         top: 128px;
         width: 435px;
-        height: 285px;
+        height: 822px;
         border-radius: 22px;
-      }
-
-      #rect-bottom {
-        left: 1238px;
-        top: 665px;
-        width: 435px;
-        height: 285px;
-        border-radius: 22px;
+        background: #000;
+        border: 2px solid #6b6b6b;
       }
 
       #circle {
@@ -57,21 +60,87 @@
         width: 875px;
         height: 875px;
         border-radius: 50%;
+        background: #000;
       }
 
-      #tunnel {
+      /* Both areas are turned 270deg (a quarter-turn counter-clockwise).
+         #circle is square, so the footage needs no size compensation — the
+         caption panel does, see #caption-inner. */
+      #rotor {
+        width: 875px;
+        height: 875px;
+        transform: rotate(270deg);
+      }
+
+      /* Source is 854x480; `cover` into an 875 square already fills the height
+         exactly and crops the sides, so a vertical object-position would do
+         nothing. Scaling from the top edge is what actually pushes in on the
+         top of the frame. --zoom 1 shows the full height, 2 shows the top half. */
+      #video {
         display: block;
         width: 875px;
         height: 875px;
+        object-fit: cover;
+        --zoom: 1.6;
+        transform: scale(var(--zoom));
+        transform-origin: top center;
+      }
+
+      /* Turned with the footage. A quarter-turn swaps the axes, so the content
+         box is authored at the panel's dimensions REVERSED (822x435) and
+         rotated back into the 435x822 panel. Centring is done about the box's
+         own centre, so the rotated result lands on the panel's integer edges
+         even though the untransformed offsets are fractional. */
+      #caption-inner {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 822px;
+        height: 435px;
+        padding: 34px 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: translate(-50%, -50%) rotate(270deg);
+      }
+
+      /* One cue at a time. The longest line in this transcript is 40 chars and
+         Roboto Mono advances at ~0.6em, so 56px wraps the worst case to three
+         lines (~226px) inside the 367px of usable height — it never clips. */
+      #cue {
+        font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo,
+          monospace;
+        font-size: 56px;
+        font-weight: 500;
+        line-height: 1.3;
+        /* Caps carry no descenders and read tighter, so the negative tracking
+           the mixed-case setting used is relaxed. Roboto Mono advances every
+           glyph identically, so upper-casing itself shifts no widths. */
+        letter-spacing: 0.01em;
+        text-transform: uppercase;
+        text-align: center;
+        text-wrap: balance;
+        color: #ffffff;
+        opacity: 1;
+        transition: opacity 130ms linear;
       }
     </style>
   </head>
   <body>
     <div id="stage">
-      <div class="area" id="rect-top"></div>
-      <div class="area" id="rect-bottom"></div>
+      <div class="area" id="captions">
+        <div id="caption-inner"><div id="cue"></div></div>
+      </div>
       <div class="area" id="circle">
-        <canvas id="tunnel" width="875" height="875"></canvas>
+        <div id="rotor">
+          <video
+            id="video"
+            src="videos/source/orient.mp4"
+            muted
+            playsinline
+            autoplay
+          ></video>
+        </div>
       </div>
     </div>
     <script>
@@ -87,39 +156,88 @@
       window.addEventListener("resize", position);
       position();
 
-      // Rainbow tunnel: concentric rings on a geometric radius progression
-      // (log-spaced, so motion reads as flying forward), hue cycling along
-      // the depth axis, with a slow global pulse in scale and brightness.
-      const canvas = document.getElementById("tunnel");
-      const ctx = canvas.getContext("2d");
-      const SIZE = 875;
-      const CENTER = SIZE / 2;
-      const RING_RATIO = 0.9; // radius shrink per ring
-      const RING_COUNT = 70;
-      const ZOOM_SPEED = 1.4; // rings per second toward viewer
-      const HUE_STEP = 22; // degrees of hue per ring
-      const PULSE_PERIOD = 2.4; // seconds
+      const video = document.getElementById("video");
+      const cueEl = document.getElementById("cue");
 
-      function draw(now) {
-        const t = now / 1000;
-        const phase = (t * ZOOM_SPEED) % 1;
-        const pulse = Math.sin((t / PULSE_PERIOD) * Math.PI * 2);
-        const maxR = CENTER * (1.12 + 0.08 * pulse);
-        const light = 52 + 8 * pulse;
+      let cues = [];
+      let shown = -1;
+      let swap = null;
 
-        for (let i = 0; i < RING_COUNT; i++) {
-          const r = maxR * Math.pow(RING_RATIO, i - phase);
-          if (r < 0.5) break;
-          const hue = ((i - phase) * HUE_STEP - t * 60) % 360;
-          ctx.fillStyle = `hsl(${hue} 100% ${light}%)`;
-          ctx.beginPath();
-          ctx.arc(CENTER, CENTER, Math.min(r, CENTER * 1.5), 0, Math.PI * 2);
-          ctx.fill();
+      fetch("captions.json")
+        .then((r) => r.json())
+        .then((data) => {
+          cues = data;
+          tick();
+        })
+        .catch((e) => console.error("caption load failed", e));
+
+      // Index of the last cue that has started at time t, or -1 before the
+      // first one. Binary search — this runs every animation frame. The cues
+      // are contiguous (largest gap in this transcript is 0.01s), so holding
+      // the last-started line needs no separate handling for silence.
+      function cueAt(t) {
+        let lo = 0,
+          hi = cues.length - 1,
+          found = -1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (cues[mid].t <= t) {
+            found = mid;
+            lo = mid + 1;
+          } else {
+            hi = mid - 1;
+          }
         }
-        requestAnimationFrame(draw);
+        return found;
       }
-      requestAnimationFrame(draw);
 
+      // Fade out, swap the text while it is invisible, fade back in. The
+      // timeout matches the opacity transition; cues run ~2-3s so it never
+      // backs up.
+      function show(i) {
+        if (i === shown) return;
+        shown = i;
+        cueEl.style.opacity = "0";
+        clearTimeout(swap);
+        swap = setTimeout(() => {
+          cueEl.textContent = i < 0 ? "" : cues[i].s;
+          cueEl.style.opacity = "1";
+        }, 130);
+      }
+
+      function tick() {
+        show(cueAt(video.currentTime));
+        requestAnimationFrame(tick);
+      }
+
+      // The print opens on black leader, so playback starts past it and the
+      // loop returns there rather than to 0. Caption times are absolute video
+      // times and need no offset; START lands just as the first cue (19.76s)
+      // comes up, so the narration begins with the picture.
+      const START = 20;
+
+      function toStart() {
+        try {
+          video.currentTime = START;
+        } catch (e) {
+          /* metadata not in yet; loadedmetadata will retry */
+        }
+      }
+
+      if (video.readyState >= 1) toStart();
+      video.addEventListener("loadedmetadata", toStart);
+      video.addEventListener("ended", () => {
+        toStart();
+        video.play().catch(() => {});
+      });
+
+      // Autoplay is only permitted while muted; the frame's capture is
+      // silent anyway (process.sh muxes in a null audio track). Hold until the
+      // webfont is in so a capture never bakes in the fallback face.
+      const fonts = document.fonts
+        ? document.fonts.ready.catch(() => {})
+        : Promise.resolve();
+      fonts.then(() => video.play().catch(() => {}));
     </script>
   </body>
 </html>
