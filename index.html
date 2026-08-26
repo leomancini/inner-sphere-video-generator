@@ -41,9 +41,9 @@
       }
 
       /* Was #rect-top (y128, h285) + #rect-bottom (y665, h285). Merged into
-         one panel spanning both plus the 252px gap: y128 -> y950. The border
-         is inside the box (box-sizing: border-box), so the panel's outer
-         footprint stays exactly 435x822. */
+         one panel spanning both plus the 252px gap: y128 -> y950. Black on a
+         black stage and unbordered, so the panel reads as bare text floating
+         in the frame; the box still defines where the captions sit. */
       #captions {
         left: 1238px;
         top: 128px;
@@ -51,7 +51,6 @@
         height: 822px;
         border-radius: 22px;
         background: #000;
-        border: 2px solid #6b6b6b;
       }
 
       /* clip-path, not just border-radius + overflow: hidden — the video is a
