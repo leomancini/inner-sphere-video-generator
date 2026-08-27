@@ -1,6 +1,8 @@
 #!/bin/bash
 # Re-encode videos dropped into videos/input/ to the video frame's required
-# format (see CLAUDE.md) and write them to videos/processed/.
+# format (see CLAUDE.md) and write them to videos/processed/. Source audio is
+# discarded — the output always carries the silent stereo track the frame
+# requires.
 #
 #   ./process.sh          process everything pending in videos/input/
 #   ./process.sh --watch  keep running, processing new files as they appear
@@ -14,6 +16,7 @@ encode() {
   local in="$1" out="$2"
   ffmpeg -y -nostdin -loglevel error -stats -i "$in" \
     -f lavfi -i anullsrc=r=48000:cl=stereo \
+    -map 0:v:0 -map 1:a \
     -vf "scale=1728:1080,fps=30000/1001,format=yuv420p" \
     -c:v libx264 -profile:v high -level:v 4.0 -bf 0 -pix_fmt yuv420p \
     -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv \
